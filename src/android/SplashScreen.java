@@ -6,9 +6,7 @@
        to you under the Apache License, Version 2.0 (the
        "License"); you may not use this file except in compliance
        with the License.  You may obtain a copy of the License at
-
          http://www.apache.org/licenses/LICENSE-2.0
-
        Unless required by applicable law or agreed to in writing,
        software distributed under the License is distributed on an
        "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -45,6 +43,8 @@ import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
+
+import java.lang.reflect.InvocationTargetException;
 
 public class SplashScreen extends CordovaPlugin {
     private static final String LOG_TAG = "SplashScreen";
@@ -118,7 +118,7 @@ public class SplashScreen extends CordovaPlugin {
 
     private int getFadeDuration () {
         int fadeSplashScreenDuration = preferences.getBoolean("FadeSplashScreen", true) ?
-            preferences.getInteger("FadeSplashScreenDuration", DEFAULT_FADE_DURATION) : 0;
+                preferences.getInteger("FadeSplashScreenDuration", DEFAULT_FADE_DURATION) : 0;
 
         if (fadeSplashScreenDuration < 30) {
             // [CB-9750] This value used to be in decimal seconds, so we will assume that if someone specifies 10
@@ -155,6 +155,7 @@ public class SplashScreen extends CordovaPlugin {
             cordova.getActivity().runOnUiThread(new Runnable() {
                 public void run() {
                     webView.postMessage("splashscreen", "hide");
+                    setParentFullScreenListener();
                 }
             });
         } else if (action.equals("show")) {
@@ -169,6 +170,22 @@ public class SplashScreen extends CordovaPlugin {
 
         callbackContext.success();
         return true;
+    }
+
+    /**
+     * BidchatCustom
+     * Changed so that there is a hook to the main activity once loading is finished
+     */
+    private void setParentFullScreenListener() {
+        try {
+            cordova.getActivity().getClass().getDeclaredMethod("setFullScreenListener").invoke(cordova.getActivity());
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -362,6 +379,12 @@ public class SplashScreen extends CordovaPlugin {
 
                 spinnerDialog.show();
                 spinnerDialog.setContentView(centeredLayout);
+                /**
+                 * BidchatCustom
+                 * Needed to set the UIVisibility flag to all the dialogs on the activity.
+                 * */
+                spinnerDialog.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+                splashDialog.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
             }
         });
     }
